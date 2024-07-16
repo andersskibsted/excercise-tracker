@@ -3,6 +3,7 @@ const app = express()
 const cors = require('cors')
 require('dotenv').config()
 const crypto = require('crypto')
+const _ = require('lodash');
 
 
 app.use(cors())
@@ -46,7 +47,9 @@ app.get('/api/users', (req, res) => {
 app.post('/api/users/:_id/exercises', (req, res) => {
   const userId = req.params._id;
   const user = data[userId];
+
   const date = req.body.date ? new Date(req.body.date) : new Date(Date.now());
+
   const excerciseObj = { 'description': req.body.description,
                           'duration': parseInt(req.body.duration),
                           'date': date
@@ -66,20 +69,24 @@ app.get('/api/users/:_id/logs', (req, res) => {
   const userId = req.params._id;
   const from = req.query.from ? new Date(req.query.from) : new Date(-8640000000000000);
   const to = req.query.to ? new Date(req.query.to) : new Date(8640000000000000);
-  const limit = req.query.limit;
-  let userObj = data[userId];
-  let partLog = userObj.log.filter(obj => {
+  const limit = parseInt(req.query.limit);
+  let outputObj = _.cloneDeep(data[userId]);
+
+  let partLog = outputObj.log.filter(obj => {
     return obj.date > from && obj.date < to;
   })
+  partLog = !isNaN(limit) ? partLog.slice(0, limit) : partLog;
   
-  partLog = limit ? partLog.slice(0, limit) : partLog;
-  if (from || to || limit) {
-    userObj.log = partLog;
+  if (req.query.from || req.query.to || req.query.limit) {
+    outputObj.log = partLog;
+    
   }
-  userObj.log.forEach(obj => {
+
+  outputObj.log.forEach(obj => {
     obj.date = obj.date.toDateString()
   });
-  res.send(userObj);
+
+  res.send(outputObj);
 })
 
 
